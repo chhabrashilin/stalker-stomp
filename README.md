@@ -1,11 +1,3 @@
-## Your Team
-
-- Shilin Chhabra (chhabra7@wisc.edu)
-- Hancheng Ma (hma263@wisc.edu)
-
-Reach your partner directly by emailing the address above — it's their @wisc.edu NetID email.
----
-
 # Typescript Game
 
 ## Setup
