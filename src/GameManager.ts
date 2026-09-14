@@ -7,6 +7,7 @@ import { SoundManager } from "./SoundManager.js";
 import { CreatureState } from "./sprites/Creature.js";
 
 export const GRAVITY: number = 0.002;
+export const STARTING_LIVES: number = 3;
 
 enum STATE {
     Loading,
@@ -24,6 +25,7 @@ export class GameManager {
     oldState: STATE;
     gameState: STATE; //the different possible states the game could be in (loading, menu, running, finished, etc.)
     level: number;
+    lives: number;
     moveRight: GameAction;
     moveLeft: GameAction;
     jump: GameAction;
@@ -31,6 +33,7 @@ export class GameManager {
 
     constructor() {
         this.level = 0;
+        this.lives = STARTING_LIVES;
         this.oldState = STATE.Loading;
         this.gameState = STATE.Loading;
         this.resources = new ResourceManager("assets/assets.json");
@@ -46,11 +49,11 @@ export class GameManager {
     draw() {
         switch (this.gameState) {
             case STATE.Running: {
-                this.map.draw();
+                this.map.draw(this.lives);
                 break;
             }
             case STATE.Menu: {
-                this.map.draw();
+                this.map.draw(this.lives);
                 //this.settings.draw();
                 this.settings.showMenu();
                 break;
@@ -59,6 +62,12 @@ export class GameManager {
                 break;
             }
             case STATE.Finished: {
+                textAlign(CENTER, CENTER);
+                textSize(48);
+                fill(0);
+                text("Game Over", 400, 280);
+                textSize(20);
+                text("Press any key to restart", 400, 330);
                 break;
             }
             default: {
@@ -73,6 +82,14 @@ export class GameManager {
         switch (this.gameState) {
             case STATE.Running: {
                 this.map.update();
+                if (this.map.player.getState() == CreatureState.DEAD) {
+                    this.lives -= 1;
+                    if (this.lives > 0) {
+                        this.map.initialize(); //start the level over
+                    } else {
+                        this.gameState = STATE.Finished;
+                    }
+                }
                 this.inputManager.checkInput();
                 this.processActions();
                 break;
@@ -126,6 +143,18 @@ export class GameManager {
 
     toggleFullScreen() {
         this.settings.toggleFullScreen();
+    }
+
+    isGameOver(): boolean {
+        return this.gameState == STATE.Finished;
+    }
+
+    restartGame() {
+        this.lives = STARTING_LIVES;
+        this.level = 0;
+        this.map = new GameMap(this.level, this.resources, this.settings);
+        this.oldState = STATE.Running;
+        this.gameState = STATE.Menu;
     }
 
     toggleMenu() {
