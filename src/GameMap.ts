@@ -12,7 +12,7 @@ export function computeParallaxX(
     mapWidth: number,
     bgWidth: number
 ): number {
-    return Math.trunc(offsetX);
+    return Math.trunc((offsetX * (myW - bgWidth)) / (myW - mapWidth));
 }
 
 export class GameMap {
@@ -116,7 +116,7 @@ export class GameMap {
         return Math.floor(x / this.tile_size);
     }
 
-    draw() {
+    draw(lives: number) {
         const myW = 800;
         const myH = 600;
         const mapWidth = this.tilesToPixels(this.width);
@@ -163,6 +163,15 @@ export class GameMap {
                 sprite.wakeUp();
             }
         });
+
+        push();
+        fill(0);
+        stroke(255);
+        strokeWeight(2);
+        textSize(20);
+        textAlign(LEFT, TOP);
+        text(`Lives: ${lives}`, 10, 10);
+        pop();
     }
 
     isCollision(s1: Sprite, s2: Sprite): boolean {
@@ -306,8 +315,7 @@ export class GameMap {
 
     update() {
         if (this.player.getState() == CreatureState.DEAD) {
-            this.initialize(); //start the level over
-            return;
+            return; //wait for GameManager to decide whether to restart or end the game
         }
         this.updateSprite(this.player); //moves sprite within the game
         this.player.update(deltaTime); //updates the animation of the sprite

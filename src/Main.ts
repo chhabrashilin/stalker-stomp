@@ -48,6 +48,10 @@ export function windowResized() {
 }
 
 export function keyPressed() {
+    if (game.isGameOver()) {
+        game.restartGame();
+        return;
+    }
     if (key == "m") {
         game.toggleMenu();
     }
