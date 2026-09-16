@@ -12,7 +12,13 @@ export function computeParallaxX(
     mapWidth: number,
     bgWidth: number
 ): number {
-    return Math.trunc((offsetX * (myW - bgWidth)) / (myW - mapWidth));
+    // A map exactly one screen wide never scrolls, so its background stays put
+    // (and the ratio below would otherwise be 0 / 0 = NaN).
+    if (mapWidth === myW) {
+        return 0;
+    }
+    // "+ 0" normalizes -0 (from a layer narrower than the viewport) to 0
+    return Math.trunc((offsetX * (myW - bgWidth)) / (myW - mapWidth)) + 0;
 }
 
 export class GameMap {
