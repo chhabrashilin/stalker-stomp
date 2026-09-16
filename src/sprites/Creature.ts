@@ -10,6 +10,16 @@ export enum CreatureState {
     NORMAL,
 }
 
+/**
+ * What happens when the player touches a creature.  GameMap asks the creature
+ * itself rather than deciding, so an enemy can refuse to be stomped.
+ */
+export enum StompResult {
+    KILLS_CREATURE,
+    BLOCKED,
+    KILLS_PLAYER,
+}
+
 export class Creature extends Sprite {
     DIE_TIME = 1000;
 
@@ -57,6 +67,29 @@ export class Creature extends Sprite {
 
     getMaxSpeed() {
         return 0;
+    }
+
+    /**
+     * Decides the outcome of the player touching this creature.  The default is
+     * the long-standing rule: landing on a creature kills it, anything else
+     * kills the player.
+     */
+    resolvePlayerContact(fromAbove: boolean): StompResult {
+        return fromAbove ? StompResult.KILLS_CREATURE : StompResult.KILLS_PLAYER;
+    }
+
+    /**
+     * Called when this creature shrugged off a stomp.  A no-op for creatures
+     * that can always be stomped, so GameMap never needs to know the subclass.
+     */
+    onBlocked() {}
+
+    /**
+     * How many times a normal stomp this creature is worth.  A weight rather
+     * than a point total, so the sprites stay independent of the scoring rules.
+     */
+    stompValue(): number {
+        return 1;
     }
 
     update(deltaTime: number) {

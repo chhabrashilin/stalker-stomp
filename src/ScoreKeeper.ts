@@ -68,10 +68,14 @@ export class ScoreKeeper {
         return this.add(POINTS.GEM);
     }
 
-    stomp(): number {
+    /**
+     * Awards a stomp, doubling for each enemy killed since the player last
+     * landed. Tougher enemies pass a larger base, which the chain then scales.
+     */
+    stomp(base: number = POINTS.STOMP): number {
         const multiplier = Math.min(Math.pow(2, this.stompChain), MAX_STOMP_MULTIPLIER);
         this.stompChain++;
-        return this.add(POINTS.STOMP * multiplier);
+        return this.add(base * multiplier);
     }
 
     land() {
