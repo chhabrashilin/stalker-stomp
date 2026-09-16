@@ -1,21 +1,21 @@
-# Map file for tile-based game 
+# Level 2: Lantern Ruins
 # (Lines that start with '#' are comments)
-# The tiles are:
-#   (Space) Empty tile
-#   A..Z    Tiles A through Z
-#   o       Star
-#   !       Music Note
-#   *       Goal
-#   1       Bad Guy 1 (grub)
-#   2       Bad Guy 2 (fly)
-BF          o o o                o o o o o o o o o o o o o o o o o o o o o o o                EB
-AD         IIIIIII              IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII               CA
-AD 0                    o o o                I                   EBBBBBBBBBBBBBF     o o o o  CA
-AD                     IIIIIII               I                   CAAAAAAAAAAAAAD    o o o o o CA
-AD                                           I             o o   CAAAAAAAAAAAAAHF    o o o o  CA
-AD                    2   !        2                      IIIII  CAAAAAAAAAAAAAAD   o o o o o CA
-AD                      IIIII                                    CAAAAAAAAAAAAAAHF   IIIIIII  CA
-AD         III                          1    1  1        2       CAAAAAAAAAAAAAAAD  o o o o o CA
-AD                            1      IIIIIIIIIIIII               CAAAAAAAAAAAAAAAHF  o o o o  CA
-AD      1       EBBBBBBBBBBBBBBBF     o o o o o o              * CAAAAAAAAAAAAAAAAD o o o o o CA
-AHBBBBBBBBBBBBBBGAAAAAAAAAAAAAAAHBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBGAAAAAAAAAAAAAAAAHBBBBBBBBBBBGA
+# (Lines that start with '@' describe map-level information)
+#
+# Tiles:   A stone   B mossy ground   C/D wall sides   E/F mossy corners
+#          G/H wall feet   I wooden plank
+# Sprites: 0 player   * glowing heart (level goal)   o star   ! music note   ^ gem
+#          1 slime   2 bat   - stone golem
+@parallax-layer bg1
+@parallax-layer bg2
+@music music
+                                                                                                
+                                                                                                
+                                                                                                
+                                    o o o o       !                                  o          
+             o        2       ^                              2 o                    III         
+           o                      IIIIIIIIIII    III       o       o      ^                     
+         o  EF   IIII        IIIEF            EF       o 2    EF                III             
+    ooo   EFCD            EF    CD            CD          EF  CD  EF        EBF                 
+  0     EFCDCD      1     CD    CD    1   -   CD      EF  CD  CD  CD   1    CAD         -    *  
+BBBBBBBBGHGHGHBBBBBBBBBBBBGHBBBBGHBBBBBBBBBBBBGHBBBBBBGHBBGHBBGHBBGHBBBBBBBBGAHBBBBBBBBBBBBBBBBB
