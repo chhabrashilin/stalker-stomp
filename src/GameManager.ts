@@ -63,9 +63,18 @@ export class GameManager {
                 textAlign(CENTER, CENTER);
                 textSize(48);
                 fill(0);
-                text("Game Over", 400, 280);
+                text("Game Over", 400, 260);
+                textSize(24);
+                text(`Final score: ${this.map.score.score}`, 400, 315);
                 textSize(20);
-                text("Press any key to restart", 400, 330);
+                text(
+                    this.map.score.beatHighScore
+                        ? "New high score!"
+                        : `Best: ${this.map.score.highScore}`,
+                    400,
+                    350
+                );
+                text("Press any key to restart", 400, 400);
                 break;
             }
             default: {

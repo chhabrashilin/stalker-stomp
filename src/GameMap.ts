@@ -5,6 +5,17 @@ import { GRAVITY } from "./GameManager.js";
 import { Creature, CreatureState } from "./sprites/Creature.js";
 import { Heart, Music, PowerUp, Star } from "./sprites/PowerUp.js";
 import { Settings } from "./Settings.js";
+import { ScoreKeeper } from "./ScoreKeeper.js";
+
+export const POPUP_LIFETIME = 900; //ms a "+points" label stays on screen
+export const POPUP_RISE_SPEED = 0.05; //pixels per ms the label floats upward
+
+export interface ScorePopup {
+    x: number;
+    y: number;
+    text: string;
+    age: number;
+}
 
 export function computeParallaxX(
     offsetX: number,
@@ -35,15 +46,22 @@ export class GameMap {
     prize: p5.SoundFile;
     music: p5.SoundFile;
     boop: p5.SoundFile;
+    score: ScoreKeeper;
+    popups: ScorePopup[];
 
     constructor(level: number, resources: ResourceManager, settings: Settings) {
         this.settings = settings;
         this.level = level;
         this.resources = resources;
+        //created once per playthrough so the score survives deaths and level changes
+        this.score = new ScoreKeeper();
         this.initialize();
     }
 
     initialize() {
+        //no-op right after a level is cleared; after a death it rolls back that attempt's points
+        this.score.restartLevel();
+        this.popups = [];
         this.prize = this.resources.getLoad("prize");
         this.music = this.resources.getLoad("music");
         this.boop = this.resources.getLoad("boop2");
@@ -171,12 +189,27 @@ export class GameMap {
         });
 
         push();
+        textAlign(CENTER, BOTTOM);
+        textSize(18);
+        strokeWeight(3);
+        this.popups.forEach((popup) => {
+            const alpha = 255 * (1 - popup.age / POPUP_LIFETIME);
+            fill(255, 225, 110, alpha);
+            stroke(0, alpha);
+            text(popup.text, Math.trunc(popup.x + offsetX), Math.trunc(popup.y + offsetY));
+        });
+        pop();
+
+        push();
         fill(0);
         stroke(255);
         strokeWeight(2);
         textSize(20);
         textAlign(LEFT, TOP);
         text(`Lives: ${lives}`, 10, 10);
+        textAlign(RIGHT, TOP);
+        text(`Score: ${this.score.score}`, myW - 10, 10);
+        text(`Best: ${this.score.highScore}`, myW - 10, 36);
         pop();
     }
 
@@ -218,6 +251,7 @@ export class GameMap {
             if (s instanceof Creature) {
                 if (canKill) {
                     s.setState(CreatureState.DYING);
+                    this.showPoints(s, this.score.stomp());
                     if (this.settings.playEvents) {
                         this.boop.play();
                     }
@@ -240,16 +274,46 @@ export class GameMap {
 
     acquirePowerUp(p: PowerUp) {
         this.removeSprite(p);
-        if (p instanceof Star) {
-            if (this.settings.playEvents) {
-                this.prize.play();
-            }
-        } else if (p instanceof Music) {
-            // no-op: music notes collected but have no effect yet
-        } else if (p instanceof Heart) {
+        if (p instanceof Heart) {
+            const bonus = this.score.clearLevel();
             this.level += 1;
             this.initialize();
+            this.showPoints(this.player, bonus, "Level clear! ");
+            return;
         }
+        if (p instanceof Star) {
+            this.showPoints(p, this.score.collectStar());
+        } else if (p instanceof Music) {
+            this.showPoints(p, this.score.collectMusic());
+        } else {
+            //any other power-up is a gem
+            this.showPoints(p, this.score.collectGem());
+        }
+        if (this.settings.playEvents) {
+            this.prize.play();
+        }
+    }
+
+    /**
+     * Floats a "+points" label up from the top-center of the given sprite.
+     */
+    showPoints(s: Sprite, points: number, label = "") {
+        const pos = s.getPosition();
+        const img = s.getImage();
+        this.popups.push({
+            x: pos.x + (img ? img.width / 2 : 0),
+            y: pos.y,
+            text: `${label}+${points}`,
+            age: 0,
+        });
+    }
+
+    updatePopups(elapsedTime: number) {
+        this.popups.forEach((popup) => {
+            popup.age += elapsedTime;
+            popup.y -= POPUP_RISE_SPEED * elapsedTime;
+        });
+        this.popups = this.popups.filter((popup) => popup.age < POPUP_LIFETIME);
     }
 
     getTileCollision(s: Sprite, newPos: p5.Vector) {
@@ -325,6 +389,10 @@ export class GameMap {
         }
         this.updateSprite(this.player); //moves sprite within the game
         this.player.update(deltaTime); //updates the animation of the sprite
+        if (this.player.onGround) {
+            this.score.land(); //touching the ground ends a stomp chain
+        }
+        this.updatePopups(deltaTime);
 
         this.sprites.forEach((sprite, index, obj) => {
             if (sprite instanceof Creature) {
