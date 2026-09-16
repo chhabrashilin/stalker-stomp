@@ -117,6 +117,39 @@
                 {"img":"grub2" , "operators":["mirror","flip"], "duration":150}
             ]
         },
+        "stalker": {
+            "type": "Stalker",
+            "left": [
+                {"img":"stalker1", "duration":150},
+                {"img":"stalker2", "duration":150}
+            ],
+            "right": [
+                {"img":"stalker1", "operators":["mirror"], "duration":150},
+                {"img":"stalker2", "operators":["mirror"], "duration":150}
+            ],
+            "alertLeft": [
+                {"img":"stalkerAlert", "duration":150}
+            ],
+            "alertRight": [
+                {"img":"stalkerAlert", "operators":["mirror"], "duration":150}
+            ],
+            "stunnedLeft": [
+                {"img":"stalkerStunned1", "duration":120},
+                {"img":"stalkerStunned2", "duration":120}
+            ],
+            "stunnedRight": [
+                {"img":"stalkerStunned1", "operators":["mirror"], "duration":120},
+                {"img":"stalkerStunned2", "operators":["mirror"], "duration":120}
+            ],
+            "deadLeft": [
+                {"img":"stalker1", "operators":["flip"], "duration":150},
+                {"img":"stalker2", "operators":["flip"], "duration":150}
+            ],
+            "deadRight": [
+                {"img":"stalker1", "operators":["mirror","flip"], "duration":150},
+                {"img":"stalker2", "operators":["mirror","flip"], "duration":150}
+            ]
+        },
         "star": {
             "type": "Star",
             "default": [
@@ -151,6 +184,7 @@
             "*": "heart",
             "1": "grub",
             "2": "fly",
+            "3": "stalker",
             "0": "player",
             "^": "powerup",
             "-": "caveman"

@@ -5,7 +5,7 @@
 # Tiles:   A stone   B mossy ground   C/D wall sides   E/F mossy corners
 #          G/H wall feet   I wooden plank
 # Sprites: 0 player   * glowing heart (level goal)   o star   ! music note   ^ gem
-#          1 slime   2 bat   - stone golem
+#          1 slime   2 bat   - stone golem   3 stalker
 @parallax-layer bg1
 @parallax-layer bg2
 @music music
@@ -17,5 +17,5 @@
            o                      IIIIIIIIIII    III       o       o      ^                     
          o  EF   IIII        IIIEF            EF       o 2    EF                III             
     ooo   EFCD            EF    CD            CD          EF  CD  EF        EBF                 
-  0     EFCDCD      1     CD    CD    1   -   CD      EF  CD  CD  CD   1    CAD         -    *  
+  0     EFCDCD  3   1     CD    CD    1   -   CD      EF  CD  CD  CD   1 3  CAD         -    *  
 BBBBBBBBGHGHGHBBBBBBBBBBBBGHBBBBGHBBBBBBBBBBBBGHBBBBBBGHBBGHBBGHBBGHBBBBBBBBGAHBBBBBBBBBBBBBBBBB

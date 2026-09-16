@@ -2,10 +2,11 @@ import { Player } from "./sprites/Player.js";
 import { ResourceManager } from "./ResourceManager.js";
 import { Sprite } from "./sprites/Sprite.js";
 import { GRAVITY } from "./GameManager.js";
-import { Creature, CreatureState } from "./sprites/Creature.js";
+import { Creature, CreatureState, StompResult } from "./sprites/Creature.js";
+import { Stalker, BLOCK_BOUNCE } from "./sprites/Stalker.js";
 import { Heart, Music, PowerUp, Star } from "./sprites/PowerUp.js";
 import { Settings } from "./Settings.js";
-import { ScoreKeeper } from "./ScoreKeeper.js";
+import { POINTS, ScoreKeeper } from "./ScoreKeeper.js";
 
 export const POPUP_LIFETIME = 900; //ms a "+points" label stays on screen
 export const POPUP_RISE_SPEED = 0.05; //pixels per ms the label floats upward
@@ -32,6 +33,23 @@ export function computeParallaxX(
     return Math.trunc((offsetX * (myW - bgWidth)) / (myW - mapWidth)) + 0;
 }
 
+/**
+ * Points every Stalker at the player.
+ *
+ * This runs as a second pass once the whole map is parsed, rather than inline
+ * while the sprites are created: initialize() discovers the player part-way
+ * through the same loop, and in every map the player sits below most of the
+ * enemies, so assigning a target inline would leave the enemies above it
+ * pointing at nothing.
+ */
+export function assignTargets(sprites: Sprite[], player: Sprite) {
+    sprites.forEach((s) => {
+        if (s instanceof Stalker) {
+            s.setTarget(player);
+        }
+    });
+}
+
 export class GameMap {
     tiles: p5.Image[][];
     tile_size: number;
@@ -46,6 +64,7 @@ export class GameMap {
     prize: p5.SoundFile;
     music: p5.SoundFile;
     boop: p5.SoundFile;
+    clang: p5.SoundFile;
     score: ScoreKeeper;
     popups: ScorePopup[];
 
@@ -65,6 +84,7 @@ export class GameMap {
         this.prize = this.resources.getLoad("prize");
         this.music = this.resources.getLoad("music");
         this.boop = this.resources.getLoad("boop2");
+        this.clang = this.resources.getLoad("clang");
         this.sprites = [];
         this.background = []; //this.resources.get("background");
         this.tile_size = this.resources.get("TILE_SIZE");
@@ -130,6 +150,7 @@ export class GameMap {
                 }
             }
         }
+        assignTargets(this.sprites, this.player);
     }
 
     tilesToPixels(x: number): number {
@@ -247,23 +268,51 @@ export class GameMap {
     checkPlayerCollision(p: Player, canKill: boolean) {
         if (p.getState() != CreatureState.NORMAL) return;
         const s = this.getSpriteCollision(p);
-        if (s) {
-            if (s instanceof Creature) {
-                if (canKill) {
-                    s.setState(CreatureState.DYING);
-                    this.showPoints(s, this.score.stomp());
-                    if (this.settings.playEvents) {
-                        this.boop.play();
-                    }
-                    const pos = s.getPosition();
-                    p.setPosition(p.getPosition().x, pos.y - p.getImage().height);
-                    p.jump(true);
-                } else {
-                    p.setState(CreatureState.DYING);
+        if (!s) return;
+        if (s instanceof Creature) {
+            //the creature decides, so an armoured enemy can refuse a stomp
+            switch (s.resolvePlayerContact(canKill)) {
+                case StompResult.KILLS_CREATURE: {
+                    this.stompCreature(p, s);
+                    break;
                 }
-            } else if (s instanceof PowerUp) {
-                this.acquirePowerUp(s);
+                case StompResult.BLOCKED: {
+                    this.blockedByCreature(p, s);
+                    break;
+                }
+                case StompResult.KILLS_PLAYER: {
+                    p.setState(CreatureState.DYING);
+                    break;
+                }
             }
+        } else if (s instanceof PowerUp) {
+            this.acquirePowerUp(s);
+        }
+    }
+
+    stompCreature(p: Player, s: Creature) {
+        s.setState(CreatureState.DYING);
+        this.showPoints(s, this.score.stomp(POINTS.STOMP * s.stompValue()));
+        if (this.settings.playEvents) {
+            this.boop.play();
+        }
+        p.setPosition(p.getPosition().x, s.getPosition().y - p.getImage().height);
+        p.jump(true);
+    }
+
+    /**
+     * The player landed on something that shrugged it off. They are put on top
+     * of the creature as a real stomp would, which also separates them: left
+     * overlapping, the rebound upward would resolve as a side hit and kill them.
+     * The bounce is much shorter than a stomp's so it reads as being blocked,
+     * and it scores nothing -- but it does not break the stomp chain either.
+     */
+    blockedByCreature(p: Player, s: Creature) {
+        s.onBlocked();
+        p.setPosition(p.getPosition().x, s.getPosition().y - p.getImage().height);
+        p.setVelocity(0, -p.JUMP_SPEED * BLOCK_BOUNCE);
+        if (this.settings.playEvents) {
+            this.clang.play();
         }
     }
 

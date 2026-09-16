@@ -4,6 +4,7 @@ import { GameManager } from "../src/GameManager";
 import { ScoreKeeper, POINTS, memoryStorage } from "../src/ScoreKeeper";
 import { Player } from "../src/sprites/Player";
 import { Creature, CreatureState, Grub } from "../src/sprites/Creature";
+import { Stalker, StalkerPhase, STALKER_STOMP_VALUE } from "../src/sprites/Stalker";
 import { Heart, Music, PowerUp, Star } from "../src/sprites/PowerUp";
 import { Sprite } from "../src/sprites/Sprite";
 
@@ -241,6 +242,116 @@ describe("GameMap score integration", () => {
             expect(texts).toContain(`Score: ${POINTS.MUSIC}`);
             expect(texts).toContain(`Best: ${POINTS.MUSIC}`);
         });
+    });
+});
+
+describe("GameMap scoring for armoured enemies", () => {
+    beforeAll(() => {
+        stubP5Drawing();
+    });
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    function stalkerAt(map: GameMap, phase: StalkerPhase): Stalker {
+        // every animation the Stalker selects for itself, or entering a phase
+        // would leave currAnimation undefined and getImage() would throw
+        const stalker = withFrames(
+            new Stalker(),
+            64,
+            64,
+            "left",
+            "right",
+            "alertLeft",
+            "alertRight",
+            "stunnedLeft",
+            "stunnedRight",
+            "deadLeft",
+            "deadRight"
+        );
+        stalker.setPosition(0, 100);
+        stalker.enterPhase(phase);
+        map.sprites.push(stalker);
+        map.getSpriteCollision = () =>
+            stalker.getState() === CreatureState.NORMAL ? stalker : null;
+        return stalker;
+    }
+
+    function grubAt(map: GameMap): Creature {
+        const grub = withFrames(new Grub(), 64, 48, "left", "right");
+        grub.setPosition(0, 100);
+        map.sprites.push(grub);
+        map.getSpriteCollision = () => (grub.getState() === CreatureState.NORMAL ? grub : null);
+        return grub;
+    }
+
+    it("stomping a stunned Stalker is worth three ordinary stomps", () => {
+        const map = makeBareMap();
+        const stalker = stalkerAt(map, StalkerPhase.STUNNED);
+
+        map.checkPlayerCollision(map.player, true);
+
+        expect(stalker.getState()).toBe(CreatureState.DYING);
+        expect(map.score.score).toBe(POINTS.STOMP * STALKER_STOMP_VALUE);
+        expect(map.popups.map((p) => p.text)).toEqual([`+${POINTS.STOMP * STALKER_STOMP_VALUE}`]);
+    });
+
+    it("a Stalker kill is doubled by the chain like any other", () => {
+        const map = makeBareMap();
+
+        grubAt(map);
+        map.checkPlayerCollision(map.player, true);
+        stalkerAt(map, StalkerPhase.STUNNED);
+        map.checkPlayerCollision(map.player, true);
+
+        expect(map.score.score).toBe(POINTS.STOMP + POINTS.STOMP * STALKER_STOMP_VALUE * 2);
+    });
+
+    it("a stomp it shrugs off scores nothing and hurts nobody", () => {
+        const map = makeBareMap();
+        const stalker = stalkerAt(map, StalkerPhase.PATROL);
+
+        map.checkPlayerCollision(map.player, true);
+
+        expect(stalker.getState()).toBe(CreatureState.NORMAL);
+        expect(map.player.getState()).toBe(CreatureState.NORMAL);
+        expect(map.score.score).toBe(0);
+        expect(map.popups).toHaveLength(0);
+    });
+
+    it("a blocked stomp bounces the player, but far less than a real one", () => {
+        const map = makeBareMap();
+        stalkerAt(map, StalkerPhase.PATROL);
+
+        map.checkPlayerCollision(map.player, true);
+        const blocked = map.player.getVelocity().y;
+
+        expect(blocked).toBeLessThan(0); // it does bounce
+        expect(Math.abs(blocked)).toBeLessThan(map.player.JUMP_SPEED / 2);
+    });
+
+    it("a blocked stomp does not break the stomp chain", () => {
+        const map = makeBareMap();
+
+        grubAt(map);
+        map.checkPlayerCollision(map.player, true); // 1st stomp, base
+        stalkerAt(map, StalkerPhase.PATROL);
+        map.checkPlayerCollision(map.player, true); // blocked, scores nothing
+        grubAt(map);
+        map.checkPlayerCollision(map.player, true); // still the 2nd of the chain
+
+        expect(map.score.score).toBe(POINTS.STOMP + POINTS.STOMP * 2);
+    });
+
+    it("an ordinary stomp still awards the plain base amount", () => {
+        // guards the default parameter added to ScoreKeeper.stomp()
+        const map = makeBareMap();
+        grubAt(map);
+
+        map.checkPlayerCollision(map.player, true);
+
+        expect(map.score.score).toBe(POINTS.STOMP);
     });
 });
 

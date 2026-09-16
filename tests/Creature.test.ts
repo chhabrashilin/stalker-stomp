@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { Creature, CreatureState, Grub, Fly } from "../src/sprites/Creature";
+import { Creature, CreatureState, Grub, Fly, StompResult } from "../src/sprites/Creature";
 
 describe("Creature", () => {
     let creature: Creature;
@@ -97,5 +97,31 @@ describe("Fly", () => {
     it("isFlying() returns false when DEAD", () => {
         fly.setState(CreatureState.DEAD);
         expect(fly.isFlying()).toBe(false);
+    });
+});
+
+// The Stalker feature moved the stomp-vs-hurt decision onto the creature so an
+// enemy can refuse to be stomped.  These pin the inherited default, which must
+// keep behaving exactly as the game always has for the enemies that predate it.
+describe("Creature player-contact defaults", () => {
+    it("landing on a grub from above kills the grub", () => {
+        expect(new Grub().resolvePlayerContact(true)).toBe(StompResult.KILLS_CREATURE);
+    });
+
+    it("touching a grub any other way kills the player", () => {
+        expect(new Grub().resolvePlayerContact(false)).toBe(StompResult.KILLS_PLAYER);
+    });
+
+    it("a fly follows the same rule", () => {
+        expect(new Fly().resolvePlayerContact(true)).toBe(StompResult.KILLS_CREATURE);
+        expect(new Fly().resolvePlayerContact(false)).toBe(StompResult.KILLS_PLAYER);
+    });
+
+    it("an ordinary creature is worth one stomp and ignores being blocked", () => {
+        const grub = new Grub();
+        expect(grub.stompValue()).toBe(1);
+        expect(() => grub.onBlocked()).not.toThrow();
+        // onBlocked is a no-op here, so the grub stays stompable
+        expect(grub.resolvePlayerContact(true)).toBe(StompResult.KILLS_CREATURE);
     });
 });

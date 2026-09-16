@@ -286,6 +286,9 @@ const P = {
     heart0: hex("#a82a57"),
     heart1: hex("#ff5a87"),
     heart2: hex("#ffc3d4"),
+    stalk0: hex("#7c2f1c"),
+    stalk1: hex("#c2542a"),
+    stalk2: hex("#f0904e"),
     golem0: hex("#342f52"),
     golem1: hex("#5a538c"),
     golem2: hex("#8d84c2"),
@@ -371,6 +374,106 @@ function drawBat(frame) {
     c.set(8, 6, P.lantern);
     c.set(7, 8, P.bat2);
     c.outline(P.ink);
+    return c.scaled(4); // 64x48
+}
+
+// The stalker: a low prowler that patrols, freezes to telegraph, then charges.
+// Every pose shares one 16x12 canvas so the frames cannot jitter, and the game
+// only ever mirrors these left-facing frames for the right-facing animations.
+function stalkerPose({
+    crouch = 0,
+    bob = 0,
+    front = 4,
+    back = 10,
+    ear = 1,
+    tail = 0,
+    headDrop = 0,
+    hackles = false,
+    eye = P.lantern,
+}) {
+    const c = new Canvas(16, 12);
+    const y = crouch;
+    const hy = 6 + y + bob + headDrop; // head sits lower when it stalks or slumps
+
+    // tail: swept up when it is about to spring, dropped when it is beaten
+    c.poly([[12, 5 + y], [15, 4 + y - tail], [15, 6 + y - tail], [13, 7 + y]], P.stalk0);
+
+    // legs reach from the belly to the ground, so a crouch shortens them
+    c.rect(front, 8 + y, 2, 4 - y, P.stalk0);
+    c.rect(back, 8 + y, 2, 4 - y, P.stalk0);
+
+    // haunches, belly shadow, and the lit ridge along the back
+    c.ellipse(9, 6 + y + bob, 5, 2.8, P.stalk1);
+    c.ellipse(9, 7.4 + y + bob, 4.4, 1.4, P.stalk0);
+    c.hline(7, 12, 4 + y + bob, P.stalk2);
+
+    // raised hackles down the spine, the silhouette cue that it has seen you
+    if (hackles) {
+        for (const x of [7, 9, 11]) {
+            c.poly([[x - 1, 4 + y + bob], [x, 1 + y + bob], [x + 1, 4 + y + bob]], P.stalk0);
+        }
+    }
+
+    // head and snout, low and forward
+    c.disc(4, hy, 2.4, P.stalk1);
+    c.rect(1, hy, 3, 2, P.stalk0);
+
+    // ear, pinned flat when it is stalking or stunned
+    c.poly([[5, hy - 2], [6, hy - 4 + (1 - ear) * 2], [7, hy - 2]], P.stalk0);
+
+    // the eye is the tell: it is what changes most between phases
+    c.set(3, hy - 1, eye);
+    c.glow(3.5, hy - 0.5, 3, withAlpha(eye, 120));
+    c.outline(P.ink);
+    return c;
+}
+
+function drawStalker(frame) {
+    // walking: the legs swap and the body rocks a pixel
+    return stalkerPose({
+        bob: [0, 1][frame],
+        front: [3, 5][frame],
+        back: [11, 9][frame],
+    }).scaled(4); // 64x48
+}
+
+function drawStalkerAlert() {
+    // the tell: crouched low, hackles up, tail raised, eye burning.
+    // One frame only, so it holds perfectly still for the 300ms it lasts.
+    const c = stalkerPose({
+        crouch: 1,
+        front: 3,
+        back: 11,
+        ear: 0,
+        tail: 3,
+        headDrop: 1,
+        hackles: true,
+        eye: P.lanternHot,
+    });
+    c.glow(3.5, 8, 5, withAlpha(P.ember, 170));
+    return c.scaled(4); // 64x48
+}
+
+function drawStalkerStunned(frame) {
+    // slumped, tail down, head hanging: the only moment it can be stomped
+    const c = stalkerPose({
+        crouch: 2,
+        front: 2,
+        back: 11,
+        ear: 0,
+        tail: -2,
+        headDrop: 1,
+        eye: frame === 0 ? P.stalk0 : P.ember,
+    });
+    // sparks circling the head, alternating so the pose visibly pulses
+    const sparks = [
+        [[2, 1], [7, 0]],
+        [[5, 0], [1, 2]],
+    ][frame];
+    sparks.forEach(([x, yy]) => {
+        c.set(x, yy, P.lanternHot);
+        c.glow(x + 0.5, yy + 0.5, 2, withAlpha(P.lantern, 110));
+    });
     return c.scaled(4); // 64x48
 }
 
@@ -876,6 +979,26 @@ function composeBoop() {
     return buf;
 }
 
+function composeClang() {
+    // the stomp that does not land: a hard, bright knock with an inharmonic
+    // partial so it reads as armour rather than as the squish of a kill
+    const len = Math.floor(0.2 * SAMPLE_RATE);
+    const buf = new Float32Array(len);
+    const rng = mulberry32(21);
+    let low = 0;
+    let ring = 0;
+    for (let i = 0; i < len; i++) {
+        const t = i / SAMPLE_RATE;
+        low += (150 + 60 * Math.exp(-t * 30)) / SAMPLE_RATE;
+        ring += 404 / SAMPLE_RATE; // deliberately not a harmonic of the body
+        buf[i] = (triangle(low) * 0.55 + pulse(ring, 0.5) * 0.25) * Math.exp(-t * 26);
+        if (t < 0.012) buf[i] += (rng() * 2 - 1) * 0.5 * (1 - t / 0.012); // the strike
+    }
+    lowpass(buf, 0.7);
+    normalize(buf, 0.8);
+    return buf;
+}
+
 // ─────────────────────────────── output ───────────────────────────────
 
 function savePNG(name, canvas) {
@@ -891,6 +1014,9 @@ function main() {
     [0, 1, 2].forEach((f) => savePNG(`player${f + 1}.png`, drawPlayer(f)));
     [0, 1].forEach((f) => savePNG(`grub${f + 1}.png`, drawSlime(f)));
     [0, 1, 2].forEach((f) => savePNG(`fly${f + 1}.png`, drawBat(f)));
+    [0, 1].forEach((f) => savePNG(`stalker${f + 1}.png`, drawStalker(f)));
+    savePNG("stalkerAlert.png", drawStalkerAlert());
+    [0, 1].forEach((f) => savePNG(`stalkerStunned${f + 1}.png`, drawStalkerStunned(f)));
     [0, 1, 2, 3].forEach((f) => savePNG(`star${f + 1}.png`, drawStar(f)));
     [0, 1, 2].forEach((f) => savePNG(`music${f + 1}.png`, drawNote(f)));
     [0, 1, 2].forEach((f) => savePNG(`heart${f + 1}.png`, drawHeart(f)));
@@ -904,7 +1030,8 @@ function main() {
     writeWav(path.join(SOUNDS, "music.wav"), composeMusic());
     writeWav(path.join(SOUNDS, "prize.wav"), composePrize());
     writeWav(path.join(SOUNDS, "boop2.wav"), composeBoop());
-    ["music.wav", "prize.wav", "boop2.wav"].forEach((f) => {
+    writeWav(path.join(SOUNDS, "clang.wav"), composeClang());
+    ["music.wav", "prize.wav", "boop2.wav", "clang.wav"].forEach((f) => {
         console.log(`  ${f.padEnd(26)} ${fs.statSync(path.join(SOUNDS, f)).size} bytes`);
     });
 }

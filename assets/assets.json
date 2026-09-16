@@ -28,6 +28,11 @@
             "powerup1": "assets/images/powerup1.png",
             "heart1": "assets/images/heart1.png",
             "grub1": "assets/images/grub1.png",
+            "stalker1": "assets/images/stalker1.png",
+            "stalker2": "assets/images/stalker2.png",
+            "stalkerAlert": "assets/images/stalkerAlert.png",
+            "stalkerStunned1": "assets/images/stalkerStunned1.png",
+            "stalkerStunned2": "assets/images/stalkerStunned2.png",
             "tile_H": "assets/images/tile_H.png",
             "tile_I": "assets/images/tile_I.png",
             "star1": "assets/images/star1.png",
@@ -46,7 +51,8 @@
         "sound": {
             "music": "assets/sounds/music.wav",
             "prize": "assets/sounds/prize.wav",
-            "boop2": "assets/sounds/boop2.wav"
+            "boop2": "assets/sounds/boop2.wav",
+            "clang": "assets/sounds/clang.wav"
         },
         "json": {
             "resources": "assets/resources/resources.json"

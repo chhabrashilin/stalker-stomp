@@ -1,5 +1,6 @@
 import { Player } from "./sprites/Player.js";
 import { Fly, Grub, Creature } from "./sprites/Creature.js";
+import { Stalker } from "./sprites/Stalker.js";
 import { Heart, Music, PowerUp, Star } from "./sprites/PowerUp.js";
 import { Sprite } from "./sprites/Sprite.js";
 
@@ -138,6 +139,10 @@ export class ResourceManager {
             }
             case "Fly": {
                 s = new Fly();
+                break;
+            }
+            case "Stalker": {
+                s = new Stalker();
                 break;
             }
             case "Heart": {
