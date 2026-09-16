@@ -58,7 +58,6 @@ function makeGameManager(overrides: Partial<GameManager> = {}): GameManager {
     gm.moveRight = new GameAction();
     gm.moveLeft = new GameAction();
     gm.jump = new GameAction();
-    gm.stop = new GameAction();
     gm.map = makeFakeMap(CreatureState.NORMAL) as any;
     Object.assign(gm, overrides);
     return gm;
