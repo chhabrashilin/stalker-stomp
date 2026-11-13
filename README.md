@@ -1,32 +1,38 @@
-## Your Team
+# Stalker Stomp
 
-- chhabra7@wisc.edu
-- niazy@wisc.edu
-- varikooty@wisc.edu
+A 2D side-scrolling platformer written in TypeScript with p5.js. Stomp enemies to chain
+combos, dodge the charging Stalker, and clear three Lantern Grove levels.
 
-Reach your partner directly by emailing the address above — it's their @wisc.edu NetID email.
----
+## Authors
 
-# Typescript Game
+- Shilin Chhabra
+- Vikram Varikooty
+- Mohammad Niazy
 
-## Setup
+Built for CS 639 at the University of Wisconsin–Madison, guided by Kaiser Pister.
 
-1. On your computer you will need to have several pieces of software installed:
+## Features
 
-* node.js and npm -- You can download and install from [here](https://www.npmjs.com/get-npm)
-* visual studio code -- This is an optional IDE but I recommend it.  It has several built-in features that make it easy for working with TypeScript and Node.  You can download and install from [here](https://code.visualstudio.com/download)
-* git -- You can download and install from [here](https://git-scm.com/downloads).
+- Stomp scoring with chains and persistent best scores
+- Lives and health system
+- Stalker enemy with a charge state machine
+- Three Lantern Grove levels with parallax scrolling
+- Settings menu with a controls list
+- Unit tests (Vitest), ESLint and Prettier
 
-2. Clone this repository to your computer.
+## Run
 
-This will create a directory on your computer called **side_scroller** which will contain the contents of this game.
+Requires Node.js and npm.
 
-3. Next, you will need to setup all the libraries the game depends on.  Go to the **side_scroller** directory and run the following command to create a **node_modules** directory and install the needed libraries into it.
+```
+npm install
+npm start
+```
 
-`npm install`
+## Test
 
-Your game should be all setup.
-
-If you are using Visual Studio Code, you can open the directory and use the node script to start a web server and monitor changes.  You can also do this from the command line by typing:
-
-npm run-script start
+```
+npm test
+npm run lint
+npm run format:check
+```
